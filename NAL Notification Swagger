@@ -1,0 +1,653 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "SOM B2B Callback Notification API",
+    "version": "1.0.0",
+    "description": "\n# Introduction\n\n<table><tbody><tr><td class = 'into_api' style='border:none;padding:0 0 0 0'><p>This API exposes the notification callback URL to consumers to send the notifications for service activation. The api is generic for all services that are getting activated over NaaSAL and underneath domains. Till B2B3, the API is consumed for Next Gen UC Domain, Gateway Protect Domain.</p></td></tr></tbody></table>\n\n\n# Getting Access to the API\n\n1. Register at [https://dev.telstra.com](https://dev.telstra.com).\n2. After registration, login to [https://dev.telstra.com](https://dev.telstra.com) and navigate to the **My apps** page.\n3. Create your application by clicking the **Add new app** button\n4. Select **API Free Trial** Product when configuring your application. your application would be auto-approved and you will see get the credentials.\n\nNow head over to **Getting Started** where you can find more details about the API.\n\n# Getting Started\n\nBelow are the steps to get started with the SOM B2B Callback Notification API.\n  1. Generate an OAuth2 Token using your `Client key` and `Client secret`.\n  2. Use OAuth Token to Trigger a Request to Messaging API \n  3. To get OAuth token, consumer should be calling oAuth-SOMB2BLginService API with Client Id, Client Secret, Scope and grant_type\n\n*Please note that the notification URL is exlcusive for NaaSAL to send service activation success or failure responses received from multiple network domains*\n\n# Frequently Asked Questions\n\n**Q: Can I send a broadcast message using the Telstra Messaging API?**\nA. Yes. Recipient numbers can be in the form of an array of strings if a broadcast message needs to be sent.\n\n**Q: How can i get support for this API?**\nA. *GSSAPACTelstraL2 <GSSAPACTelstraL2@amdocs.com>\n"
+  },
+  "host": "private.tapi.telstra.com",
+  "basePath": "/SOMB2B/v2/Updates",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/SOMB2B/v1/ManageResponse/ucDMResponse": {
+      "post": {
+        "tags": [
+          "Updates"
+        ],
+        "summary": "SOM B2B NAL Notifications",
+        "description": "This API is exposed to receive notification from NAL on the requests sent by SOM B2B",
+        "operationId": "Updates",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A header in naas API calls to provide token details. Format - **Bearer {access_token}**",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "description": "UUID. Used for business transaction correlation in the Logs.",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "X-LatestVersion",
+            "in": "header",
+            "description": "For a given a version number, **MAJOR.MINOR.PATCH** increment the: \n     MAJOR position when you make any incompatible API change\n     MINOR position when you add functionality in a backwards-compatible manner\n     PATCH (or BUILD) position when you make invisible (and thus backwards-compatible) bug fixes.\n",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "X-Group-ID",
+            "in": "header",
+            "description": "The value of X-Group-ID is the value of \"id\" for the role type = InstanceConsumerGroup under RelatedParty received as part of POST on service i.e. ucNumbers\n",
+            "required": true,
+            "type": "string",
+            "default": "B2BSmallandMediumBusiness"
+          },
+          {
+            "name": "service_type",
+            "in": "path",
+            "description": "Unique name of the Service i.e. ucNumbers",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "Notification Body",
+            "description": "Notification Resource Models.\npub/sub paradigm using callback (received as part of /hub subscriptions to deliver Events to subscribers.\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Listener"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/errorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/errorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ucNumbersTaskResponse": {
+      "type": "object",
+      "required": [
+        "href",
+        "id",
+        "numbers",
+        "relatedParty",
+        "relatedService",
+        "siteName",
+        "state",
+        "taskCreationDate",
+        "taskTransientState",
+        "transitionType"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Created by Domain. Identifier of a Task."
+        },
+        "href": {
+          "type": "string",
+          "description": "Created by Domain. Complete URI Reference to the Task ."
+        },
+        "relatedService": {
+          "$ref": "#/definitions/RelatedService"
+        },
+        "relatedParty": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RelatedParty"
+          }
+        },
+        "transitionType": {
+          "type": "string",
+          "description": "Mandatory parameter.Depicts the technology from where the numbers are being transitioned.",
+          "enum": [
+            "PSTN",
+            "ISDN2",
+            "ISDN2DID"
+          ]
+        },
+        "transitionId": {
+          "type": "string",
+          "description": "ID generated by O2A system for each transition"
+        },
+        "siteName": {
+          "type": "string",
+          "description": "This is the Site Name of the numbers in transition. Mandatory if transitionType is other than NEW."
+        },
+        "numbers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/numberRef"
+          }
+        },
+        "state": {
+          "type": "string",
+          "description": "The steady state of the connect Task.",
+          "enum": [
+            "pendingInitial",
+            "initial",
+            "outgoingActive",
+            "activationComplete",
+            "final",
+            "rejected",
+            "cancelled"
+          ]
+        },
+        "taskCreationDate": {
+          "type": "string",
+          "format": "Date-time [ex: 2016-07-02T14:20:54.123Z]",
+          "description": "Date when the Task was created (whatever its status). This parameter is not required during POST Call (as would be defaulted in Domain and populated aginst service) but should be provided in response to Task creation and retrieval call.",
+          "default": "Today"
+        },
+        "taskTransientState": {
+          "type": "string",
+          "description": "This is the transitional state of the Task . Only applicable for Transition Type other than New.",
+          "enum": [
+            "none",
+            "pendingInitial",
+            "pendingOutgoingActive",
+            "pendingActivationComplete",
+            "pendingFinal",
+            "pendingCancel",
+            "pendingRollbackToInitial"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "This is free text essentially to hold in the task event  notification, the NETACM job-id in case the transition task has been rejected following validation failure from NETACM."
+        }
+      },
+      "example": {
+        "id": "12e37746-d28f-42eb-a89b-c8c69d65bb27",
+        "href": "activationAndConfiguration/v2/service/ucNumbers/1234abcd-456e-789f-a1b2c3d4e5f8/connect/12e37746-d28f-42eb-a89b-c8c69d65bb27",
+        "relatedService": {
+          "@referredType": "ucNumbers",
+          "href": "activationAndConfiguration/v2/service/ucNumbers/1234abcd-456e-789f-a1b2c3d4e5f8"
+        },
+        "relatedParty": [
+          {
+            "role": "InstanceConsumerGroup",
+            "id": "B2BSmallandMediumBusiness"
+          }
+        ],
+        "transitionType": "PSTN",
+        "transitionId": "TID12345",
+        "siteName": "242 EX STREET",
+        "numbers": [
+          {
+            "singleNumbers": [
+              "61390001234",
+              "61390004567",
+              "61390009876",
+              "61390007564",
+              "61390011268"
+            ],
+            "ranges": [
+              {
+                "start": "61390011100",
+                "end": "61390011199"
+              },
+              {
+                "start": "61390011250",
+                "end": "61390011267"
+              },
+              {
+                "start": "61390011269",
+                "end": "61390011299"
+              },
+              {
+                "start": "61390011200",
+                "end": "61390011249"
+              }
+            ]
+          }
+        ],
+        "state": "pendingInitial",
+        "taskCreationDate": "2018-09-02T14:20:54.123Z",
+        "taskTransientState": "pendingInitial",
+        "notes": ""
+      }
+    },
+    "numberRef": {
+      "type": "object",
+      "properties": {
+        "singleNumbers": {
+          "type": "array",
+          "description": "Single numbers represents in an array.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ranges": {
+          "type": "array",
+          "description": "Number range repesents between start and end numbers",
+          "items": {
+            "$ref": "#/definitions/numbers_ranges"
+          }
+        }
+      }
+    },
+    "RelatedParty": {
+      "type": "object",
+      "required": [
+        "id",
+        "role"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Placeholder for Group ID. Consumer needs to populate this detail during POST. Can be modified as part of PATCH and should be part of instance data so that the same can be included in GET response and should be included in header of Listener API by Domain."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the related party eg. \"InstanceConsumerGroup\""
+        }
+      },
+      "example": {
+        "relatedParty": [
+          {
+            "role": "InstanceConsumerGroup",
+            "id": "B2BSmallandMediumBusiness"
+          }
+        ]
+      }
+    },
+    "serviceCharacteristic": {
+      "type": "object",
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Attribute Key of the service"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value of the attribute in notification"
+        }
+      }
+    },
+    "ServiceSpecification": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "version",
+        "href"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Service catalogue UUID of service"
+        },
+        "name": {
+          "type": "string",
+          "description": "Service name from service cataloguw used to identify the service"
+        },
+        "version": {
+          "type": "string",
+          "description": "Service version from catalogue which should be used to create service instance"
+        },
+        "href": {
+          "type": "string",
+          "description": "Href for a specific service version from service catalogue"
+        }
+      }
+    },
+    "RelatedService": {
+      "type": "object",
+      "properties": {
+        "@referredService": {
+          "type": "string",
+          "example": "ucNumbers",
+          "description": "The service type to which task is associated"
+        },
+        "href": {
+          "type": "string",
+          "example": "activationAndConfiguration/v2/service/ucNumbers/1234abcd-456e-789f-a1b2c3d4e5f8",
+          "description": "URI Reference to the service instance on assciated with the task"
+        }
+      }
+    },
+    "callBackResponse": {
+      "type": "object",
+      "required": [
+        "id",
+        "href",
+        "state",
+        "serviceSpecification",
+        "serviceCharacteristic",
+        "operatingState",
+        "relatedParty"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Created by Domain. Identifier of a service instance. Required to  be unique. Used in URIs as the identifier of the service (for modify or delete use cases). This is UUID format."
+        },
+        "href": {
+          "type": "string",
+          "description": "Created by Domain. Complete URI Reference to the service (useful  for delete or modify command)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the service."
+        },
+        "description": {
+          "type": "string",
+          "description": "A free-text description of the resouce (what it provides)."
+        },
+        "state": {
+          "type": "string",
+          "description": "The lifecycle state of the service.",
+          "enum": [
+            "active"
+          ]
+        },
+        "serviceDate": {
+          "type": "string",
+          "format": "Date-time [ISO-8601 format]",
+          "description": "Date when the service was created (whatever its status). This parameter is not required during POST Call (as would be defaulted in Domain and populated aginst service) but should be provided in response to service creation and retrieval call.",
+          "default": "Today"
+        },
+        "operatingState": {
+          "type": "string",
+          "description": "Telstra Extension to TMF. The operating status provides information on how a service is currently performing (e.g., working, failed) and if the service is being modified rom one state to another.",
+          "enum": [
+            "Unknown"
+          ],
+          "default": "Unknown"
+        },
+        "processStatus": {
+          "type": "array",
+          "description": "This is a return property populated by the domain.",
+          "items": {
+            "$ref": "#/definitions/processStatus"
+          }
+        },
+        "serviceSpecification": {
+          "$ref": "#/definitions/ServiceSpecification"
+        },
+        "relatedParty": {
+          "type": "array",
+          "description": "This property is optional. Any value supplied will be maintained as part of the service, but there are no behaviors associated with the values at this time.",
+          "items": {
+            "$ref": "#/definitions/RelatedParty"
+          }
+        },
+        "serviceCharacteristic": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/serviceCharacteristic"
+          }
+        }
+      },
+      "example": {
+        "id": "e26205f4-e144-4ded-9e64-82ede0b26e33",
+        "href": "activationAndConfiguration/v2/service/tpnTenancy/e26205f4-e144-4ded-9e64-82ede0b26e33",
+        "state": "active",
+        "serviceDate": "2018-06-21T04:17:48+00:00",
+        "serviceSpecification": {
+          "href": "serviceCatalogManagement/v2/serviceSpecification/tpnTenancy/45738c91-6873-4a42-b09c-bb6ee78090cf",
+          "name": "tpnTenancy",
+          "version": "v1.0.0"
+        },
+        "relatedParty": [
+          {
+            "role": "InstanceConsumerGroup",
+            "id": "B2BSmallandMediumBusiness"
+          }
+        ],
+        "serviceCharacteristic": [
+          {
+            "name": "CompanyName",
+            "value": "ken's Pizza"
+          },
+          {
+            "name": "Address",
+            "value": "242 Exhibition Street"
+          },
+          {
+            "name": "City",
+            "value": "Melbourne"
+          },
+          {
+            "name": "Country",
+            "value": "Australia"
+          },
+          {
+            "name": "State",
+            "value": "Victoria"
+          },
+          {
+            "name": "Post Code",
+            "value": "3001"
+          },
+          {
+            "name": "Phone",
+            "value": "0386941146"
+          },
+          {
+            "name": "Website",
+            "value": "www.telstra.com.au"
+          },
+          {
+            "name": "CustomerAccountNumber",
+            "value": "71234030"
+          },
+          {
+            "name": "DomainID",
+            "value": 537819386389
+          },
+          {
+            "name": "TenancyID",
+            "value": "3a9d6892-0011-4db5-9f6f-bad4b495caed"
+          }
+        ]
+      }
+    },
+    "errorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "description": "The HTTP status code"
+        },
+        "message": {
+          "type": "string",
+          "description": "The text description of the error"
+        }
+      },
+      "example": {
+        "code": "4xx/5xx",
+        "message": "The error message"
+      }
+    },
+    "Listener": {
+      "type": "object",
+      "required": [
+        "event",
+        "eventId",
+        "eventTime",
+        "eventType"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "example": "c40f6d4a-4eeb-4b82-9c8e-ae2cc1ae0f0b",
+          "description": "This is a Domain generated attribute and can be UUID. Unique identifier for the event message"
+        },
+        "eventTime": {
+          "type": "string",
+          "format": "Date-time [ex: 2018-08-02T14:20:54.123Z]",
+          "example": "2018-09-03T14:20:54.123Z",
+          "description": "Creation date of the event."
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Type of event from below enum (specific to business function area)",
+          "enum": [
+            "taskStateChangeNotification",
+            "taskProcessStatusChangeNotification",
+            "serviceValueChangeNotification",
+            "serviceProcessStatusChangeNotification",
+            "serviceCreationNotification"
+          ]
+        },
+        "event": {
+          "$ref": "#/definitions/callbackResponse"
+        }
+      },
+      "description": "Authentication will be pre-requisite with SOM B2B for callback API.",
+      "example": {
+        "eventId": "c40f6d4a-4eeb-4b82-9c8e-ae2cc1ae0f0b",
+        "eventTime": "2018-09-03T14:20:54.123Z",
+        "eventType": "taskStateChangeNotification",
+        "event": {
+          "task": {
+            "id": "12e37746-d28f-42eb-a89b-c8c69d65bb27",
+            "href": "activationAndConfiguration/v2/service/ucNumbers/1234abcd-456e-789f-a1b2c3d4e5f8/connect/12e37746-d28f-42eb-a89b-c8c69d65bb27",
+            "relatedService": {
+              "@referredType": "ucNumbers",
+              "href": "activationAndConfiguration/v2/service/ucNumbers/1234abcd-456e-789f-a1b2c3d4e5f8"
+            },
+            "relatedParty": [
+              {
+                "role": "InstanceConsumerGroup",
+                "id": "B2BSmallandMediumBusiness"
+              }
+            ],
+            "transitionType": "PSTN",
+            "transitionId": "TID12345",
+            "siteName": "242 EX STREET",
+            "numbers": [
+              {
+                "singleNumbers": [
+                  "61390001234",
+                  "61390004567",
+                  "61390009876",
+                  "61390007564",
+                  "61390011268"
+                ],
+                "ranges": [
+                  {
+                    "start": "61390011100",
+                    "end": "61390011199"
+                  },
+                  {
+                    "start": "61390011250",
+                    "end": "61390011267"
+                  },
+                  {
+                    "start": "61390011269",
+                    "end": "61390011299"
+                  },
+                  {
+                    "start": "61390011200",
+                    "end": "61390011249"
+                  }
+                ]
+              }
+            ],
+            "state": "outgoingActive",
+            "taskCreationDate": "2018-09-02T14:20:54.123Z",
+            "taskTransientState": "none"
+          }
+        }
+      }
+    },
+    "numbers_ranges": {
+      "properties": {
+        "start": {
+          "type": "string",
+          "description": "Start number in the numbers range."
+        },
+        "end": {
+          "type": "string",
+          "description": "End number in the numbers range."
+        }
+      }
+    },
+    "callbackResponse": {
+      "type": "object",
+      "required": [
+        "task",
+        "service"
+      ],
+      "properties": {
+        "task": {
+          "$ref": "#/definitions/ucNumbersTaskResponse"
+        }
+      }
+    },
+    "service": {
+      "$ref": "#/definitions/service"
+    },
+    "processStatus": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "properties": {
+        "severity": {
+          "type": "string",
+          "description": "Indicates if message is informational or indicates an error. Mandatory only if processStatus block is included.",
+          "enum": [
+            "INFO",
+            "WARN",
+            "ERROR",
+            "CRITICAL"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "message String"
+        },
+        "parameterizedMessage": {
+          "type": "string",
+          "description": "parameterized values from message (text)"
+        },
+        "timeStamp": {
+          "type": "string",
+          "description": "timestamp of the mesage generated and populated by domain"
+        },
+        "code": {
+          "type": "string",
+          "description": "unique identification of the message (or error)"
+        }
+      }
+    }
+  }
+}
