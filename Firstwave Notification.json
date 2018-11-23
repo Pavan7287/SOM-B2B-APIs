@@ -1,0 +1,302 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "# Introduction\nSOMB2B exposes this API. This API is used to send asynccronous notification back to SOMB2B. \n\n# Operations\n\n|Operation|Description|\n|---|---|\n|`Notify Response`|Will provide the ability to receive notification from consumer system|\n\n# Getting access to the API\nReach out to the API owner. The email address of the API owner is SOMB2B\n\n# Getting started\nThe Notification API can be accessed through OAuth2\n1. Generate an OAuth2 access token using `Client key` and `Client secret`.\n2. Use the access token to request the API.\n3. \n\n# Frequently asked questions\n\n## Notes\nThe notification request are MASSL enabled.\n",
+    "version": "1.0.0",
+    "title": "SOMB2B Asyncronous Notification",
+    "contact": {
+      "name": "Amdocs Telstra SOMB2B Team",
+      "url": "https://telstra-customerplatforms.atlassian.net/wiki/spaces/B2B/pages/160661617/1.+O2A+Team"
+    }
+  },
+  "host": "private-tapi.telstra.com",
+  "basePath": "/somb2b/v3/Notification",
+  "securityDefinitions": {
+    "auth": {
+      "type": "oauth2",
+      "flow": "application",
+      "tokenUrl": "https://private-tapi.telstra.com/v2/oauth/token",
+      "scopes": {
+        "scope": "FWSOMAUTH"
+      }
+    }
+  },
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/v1/somb2b/oauth/token": {
+      "post": {
+        "description": "To generate an OAuth2 Authentication token, pass through your Client key and Client secret that you received from API-owner.\nThe grant_type should be left as client_credentials and the scope as DISCONNECT.\n\nThe token will expire in one hour.\n",
+        "summary": "Generate OAuth2 token",
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth token",
+        "produces": [
+          "application/json"
+        ],
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "client_secret",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "description": ""
+          },
+          {
+            "name": "scope",
+            "in": "formData",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "grant_type",
+            "in": "formData",
+            "required": true,
+            "type": "string",
+            "default": "client_credentials"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/OAuthResponse"
+            },
+            "examples": {}
+          },
+          "400": {
+            "description": "unsupported_grant_type"
+          },
+          "401": {
+            "description": "invalid_client"
+          },
+          "404": {
+            "description": "The requested URI does not exist"
+          },
+          "503": {
+            "description": "The service requested is currently unavailable"
+          },
+          "default": {
+            "description": "An internal error occurred when processing the request"
+          }
+        },
+        "x-code-samples": [
+          {
+            "lang": "curl",
+            "source": "#!/bin/bash\n# Obtain these keys from the Telstra Developer Portal\nCLIENT_KEY=\"your client key\"\nCLIENT_SECRET=\"your client secret\"\ncurl -X POST -H 'Content-Type: application/x-www-form-urlencoded' \\\n-d 'grant_type=client_credentials&amp;client_id=$CLIENT_KEY&amp;client_secret=CLIENT_SECRET&amp;scope=LDMSOMAUTH`' \\\n'https://private-tapi.telstra.com/v2/oauth/token'\n"
+          }
+        ]
+      }
+    },
+    "/": {
+      "post": {
+        "tags": [
+          "SOMB2B"
+        ],
+        "summary": "Notification",
+        "description": "Receives asynchronous notification from the consumer system",
+        "operationId": "Notification",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Access token in format \"Bearer <access-token>\"",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "application/json",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "notificationData",
+            "description": "Notification Data from the consumer system",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/notificationData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Missing Mandatory attribute",
+            "schema": {
+              "$ref": "#/definitions/SOMB2BException"
+            }
+          },
+          "503": {
+            "description": "Service Unavailable"
+          },
+          "504": {
+            "description": "Gateway Timeout"
+          }
+        },
+        "security": [
+          {
+            "auth": [
+              "scope"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "notificationData": {
+      "type": "object",
+      "required": [
+        "correlationId",
+        "routingKey",
+        "timestamp",
+        "data",
+        "errors"
+      ],
+      "properties": {
+        "correlationId": {
+          "type": "string",
+          "example": "0123456789",
+          "description": "A unique correlation ID generated by SOMB2B."
+        },
+        "routingKey": {
+          "type": "string",
+          "example": "FW.service.activate.Success.v1.event",
+          "description": "Routing key is a combination of FW.service.activate.Success.v1.event"
+        },
+        "timestamp": {
+          "type": "string",
+          "example": "2018-11-05T08:15:30+11:00",
+          "description": "Time stamp for the notification"
+        },
+        "data": {
+          "$ref": "#/definitions/data"
+        },
+        "Errors": {
+          "$ref": "#/definitions/Errors"
+        }
+      },
+      "title": "Notification"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "status",
+        "resourceId",
+        "orderId",
+        "aggregatedActiveLicenses"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "Request Received",
+          "description": "Status of the request",
+          "enum": [
+            "Request Received"
+          ]
+        },
+        "resourceId": {
+          "type": "string",
+          "example": "Customer Facing Service ID",
+          "description": "FNN"
+        },
+        "orderId": {
+          "type": "string",
+          "example": "123456",
+          "description": "Order ID from P2O"
+        },
+        "aggregatedActiveLicenses": {
+          "type": "string",
+          "example": "100",
+          "description": "Active license count"
+        }
+      }
+    },
+    "Errors": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "example": "3001",
+          "description": "Error Code"
+        },
+        "message": {
+          "type": "string",
+          "example": "Invalid technical parameter: customerEmailDomainNames, outboundMTA",
+          "description": "Error Message"
+        }
+      }
+    },
+    "SOMB2BException": {
+      "type": "object",
+      "required": [
+        "errorCode",
+        "message"
+      ],
+      "properties": {
+        "errorCode": {
+          "type": "string",
+          "description": "Error code"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        }
+      },
+      "title": "SOMB2BException"
+    },
+    "OAuthResponse": {
+      "type": "object",
+      "properties": {
+        "access_token": {
+          "description": "OAuth access token",
+          "type": "string"
+        },
+        "token_type": {
+          "description": "OAuth token type",
+          "type": "string"
+        },
+        "expires_in": {
+          "description": "OAuth expity time",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
